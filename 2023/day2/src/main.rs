@@ -1,63 +1,65 @@
 use std::fs;
 
-struct Cube {
-    red: i32,
-    blue: i32,
-    green: i32,
-}
+const MAX_RED: u32 = 12;
+const MAX_GREEN: u32 = 13;
+const MAX_BLUE: u32 = 14;
+
 fn main() {
-    let max_values = Cube {
-        red: 12,
-        blue: 14,
-        green: 13,
-    };
     let contents =
         fs::read_to_string("./input.txt").expect("Should have been able to read the file");
     let lines = contents.split("\n");
+
     let mut total = 0;
+    let mut power = 0;
+
     for line in lines {
         let game: Vec<&str> = line.split(":").collect();
         let collections = game[1].split(";");
         let mut game_failed = false;
+        let mut reds: Vec<u32> = Vec::new();
+        let mut greens: Vec<u32> = Vec::new();
+        let mut blues: Vec<u32> = Vec::new();
         for subset in collections {
             let cubes = subset.split(",");
             let mut subset_failed = false;
             for cube in cubes {
                 let parts: Vec<&str> = cube.trim().split(" ").collect();
-                let number: i32 = parts[0].trim().parse::<i32>().unwrap();
-                match parts[1] {
+                let number: u32 = parts[0].trim().parse::<u32>().unwrap();
+                match parts[1].trim() {
                     "green" => {
-                        if number > max_values.green {
+                        greens.push(number);
+                        if number > MAX_GREEN {
                             subset_failed = true;
-                            break;
                         }
                     }
                     "blue" => {
-                        if number > max_values.blue {
+                        blues.push(number);
+                        if number > MAX_BLUE {
                             subset_failed = true;
-                            break;
                         }
                     }
                     "red" => {
-                        if number > max_values.red {
+                        reds.push(number);
+                        if number > MAX_RED {
                             subset_failed = true;
-                            break;
                         }
                     }
                     _ => panic!("Rest of the number"),
                 }
             }
-            game_failed = subset_failed;
             if subset_failed {
-                break;
+                game_failed = true;
             }
         }
+        power +=
+            reds.iter().max().unwrap() * greens.iter().max().unwrap() * blues.iter().max().unwrap();
         if game_failed {
             continue;
         }
         let game_data: Vec<&str> = game[0].split(" ").collect();
-        let game_number: i32 = game_data[1].trim().parse::<i32>().unwrap();
+        let game_number: u32 = game_data[1].trim().parse::<u32>().unwrap();
         total += game_number;
     }
-    println!("{}", total);
+    println!("Total: {}", total);
+    println!("Power: {}", power);
 }
