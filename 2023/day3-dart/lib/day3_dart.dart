@@ -5,7 +5,7 @@ import 'package:day3_dart/visual.dart';
 void solve(List<String> args) async {
   var input = await File('input.txt').readAsString();
   List<List<String>> grid = [];
-
+  Map<String, Set<int>> gears = new Map();
   for (var element in input.split("\n")) {
     grid.add(element.runes.map(String.fromCharCode).toList());
   }
@@ -15,86 +15,84 @@ void solve(List<String> args) async {
     var row = grid[y];
     var numAccum = "";
     bool hasHit = false;
+    List<(int, int)> tempGears = [];
     for (var x = 0; x < row.length; x++) {
       var char = row[x];
       if (int.tryParse(char) != null) {
         numAccum += char;
-        var hit = scan(grid, x, y);
-        if (hit && !hasHit) {
+        var response = checkSymbols(grid, x, y);
+        if (response.$1) {
           hasHit = true;
+          tempGears.addAll(response.$2);
         }
       } else {
         if (numAccum != "") {
           if (hasHit) {
-            numbers.add(int.parse(numAccum));
+            var number = int.parse(numAccum);
+            numbers.add(number);
             grid.printBoundingBox(x, y, numAccum.length);
             print("");
+            for (var coord in tempGears) {
+              var gearLoc = "${coord.$1},${coord.$2}}";
+              if (gears[gearLoc] == null) {
+                gears[gearLoc] = new Set();
+              }
+              gears[gearLoc]?.add(number);
+            }
+            tempGears = [];
           }
-          hasHit = false;
         }
+        hasHit = false;
         numAccum = "";
       }
     }
   }
+  print(
+      "part 1: ${numbers.reduce((previousValue, element) => previousValue + element)}");
+  var validGears = gears.values.where((element) => element.length == 2);
+  var total = 0;
+  for (var list in validGears) {
+    total += list.reduce((previousValue, element) => previousValue * element);
+  }
 
-  print(numbers.reduce((previousValue, element) => previousValue + element));
+  print("part 2: ${total}");
 }
 
-bool scan(List<List<String>> grid, int x, int y) {
-  if (y + 1 < grid.length) {
-    var isBelow = hasHit(grid, x, y + 1);
-    if (isBelow) {
-      return true;
-    }
-  }
-  if (x - 1 > 0) {
-    var isLeft = hasHit(grid, x - 1, y);
-    if (isLeft) {
-      return true;
-    }
-  }
-  if (x + 1 < grid[y].length) {
-    var isRight = hasHit(grid, x + 1, y);
-    if (isRight) {
-      return true;
-    }
-  }
+(bool, List<(int, int)>) checkSymbols(List<List<String>> grid, int x, int y) {
+  List<(int, int)> coords = [];
 
-  if (y - 1 >= 0) {
-    var isAbove = hasHit(grid, x, y - 1);
-    if (isAbove) {
-      return true;
-    }
-  }
-  if (y + 1 < grid.length && x + 1 < grid[y].length) {
-    var isBelowRight = hasHit(grid, x + 1, y + 1);
-    if (isBelowRight) {
-      return true;
-    }
-  }
-  if (y + 1 < grid.length && x - 1 >= 0) {
-    var isBelowLeft = hasHit(grid, x - 1, y + 1);
-    if (isBelowLeft) {
-      return true;
-    }
-  }
-  if (y - 1 >= 0 && x + 1 < grid[y].length) {
-    var isAboveRight = hasHit(grid, x + 1, y - 1);
-    if (isAboveRight) {
-      return true;
-    }
-  }
-  if (y - 1 >= 0 && x - 1 >= 0) {
-    var isAboveLeft = hasHit(grid, x - 1, y - 1);
-    if (isAboveLeft) {
-      return true;
-    }
-  }
-  return false;
+  void Function(int, int) isGear = (int x, int y) {
+    coords.add((x, y));
+  };
+
+  return (
+    (scan(grid, x, y + 1, isGear) ||
+        scan(grid, x - 1, y, isGear) ||
+        scan(grid, x + 1, y, isGear) ||
+        scan(grid, x, y - 1, isGear) ||
+        scan(grid, x + 1, y + 1, isGear) ||
+        scan(grid, x - 1, y + 1, isGear) ||
+        scan(grid, x + 1, y - 1, isGear) ||
+        scan(grid, x - 1, y - 1, isGear)),
+    coords
+  );
 }
 
-bool hasHit(List<List<String>> grid, int x, int y) {
-  var char = grid[y][x];
-  if (char.trim().isEmpty) return false;
-  return !"0123456789.".contains(char);
+bool scan(
+    List<List<String>> grid, int x, int y, void Function(int, int) isGear) {
+  var hasHit = false;
+  if (isValidIndex(grid, x, y)) {
+    var char = grid[y][x].trim();
+    if (char.isEmpty) false;
+    if (char == "*") {
+      isGear(x, y);
+      return true;
+    }
+    return !"0123456789.".contains(char);
+  }
+  return hasHit;
+}
+
+bool isValidIndex(List<List<String>> grid, int x, int y) {
+  return y >= 0 && y < grid.length && x >= 0 && x < grid[y].length;
 }
