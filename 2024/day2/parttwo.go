@@ -21,7 +21,7 @@ func solvePartTwo(reports [][]int) {
 		}
 
 	}
-	log.Println("Safe count", safeCount)
+	log.Printf("Safe count %d", safeCount)
 }
 
 func getUnsafeLevelsIndex(report []int) int {
