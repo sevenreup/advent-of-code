@@ -34,6 +34,7 @@ func readInput() [][]int {
 func main() {
 	reports := readInput()
 	solvePartOne(reports)
+	solvePartTwo(reports)
 }
 
 func abs(number int) int {
