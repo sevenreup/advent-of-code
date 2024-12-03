@@ -10,12 +10,21 @@ import (
 )
 
 type OpState int
+type OpType int
 
 const (
 	Initial OpState = iota
-	Function
+	MultFunction
+	DoFunction
+	DontFunction
 	Arg1
 	Arg2
+)
+
+const (
+	Multiply OpType = iota
+	Do
+	Dont
 )
 
 type Lexer struct {
@@ -30,6 +39,7 @@ type Lexer struct {
 type Op struct {
 	FirstArg  float64
 	SecondArg float64
+	Type      OpType
 }
 
 func newLexer() *Lexer {
@@ -67,14 +77,48 @@ func main() {
 				continue
 			}
 			lexer.lastRune = r
-		case '(':
-			if !lexer.lastEqualOrReset('l') {
+		case 'd':
+			lexer.lastRune = r
+		case 'o':
+			if !lexer.lastEqualOrReset('d') {
 				continue
 			}
 			lexer.lastRune = r
-			lexer.state = int(Arg1)
+		case 'n':
+			if !lexer.lastEqualOrReset('o') {
+				continue
+			}
+			lexer.lastRune = r
+		case '\'':
+			if !lexer.lastEqualOrReset('n') {
+				continue
+			}
+			lexer.lastRune = r
+		case 't':
+			if !lexer.lastEqualOrReset('\'') {
+				continue
+			}
+			lexer.lastRune = r
+		case '(':
+			if lexer.lastEqual('l') {
+				lexer.lastRune = r
+				lexer.state = int(Arg1)
+				lexer.currentOp.Type = Multiply
+				continue
+			} else if lexer.lastEqual('t') {
+				lexer.lastRune = r
+				lexer.state = int(DontFunction)
+				lexer.currentOp.Type = Dont
+				continue
+			} else if lexer.lastEqual('o') {
+				lexer.lastRune = r
+				lexer.state = int(DoFunction)
+				lexer.currentOp.Type = Do
+				continue
+			}
+			lexer.reset()
 		case ')':
-			if lexer.state == int(Arg2) {
+			if lexer.state == int(Arg2) || lexer.state == int(DoFunction) || lexer.state == int(DontFunction) {
 				lexer.finishOp()
 			} else {
 				lexer.reset()
@@ -92,7 +136,6 @@ func main() {
 				lexer.setArg(rawNumber)
 				continue
 			}
-			// log.Println("Unknown rune", r)
 			lexer.reset()
 		}
 	}
@@ -100,8 +143,19 @@ func main() {
 	log.Println(lexer.allOps)
 
 	total := 0.0
+	var lastOpType OpType
 	for _, op := range lexer.allOps {
-		total += op.FirstArg * op.SecondArg
+		if lastOpType == Dont {
+			if op.Type == Do {
+				lastOpType = op.Type
+			}
+			continue
+		}
+		if op.Type == Multiply {
+			total += op.FirstArg * op.SecondArg
+		} else {
+			lastOpType = op.Type
+		}
 	}
 	log.Println("Total", total)
 }
@@ -109,6 +163,10 @@ func main() {
 func (l *Lexer) reset() {
 	l.lastRune = ' '
 	l.state = int(Initial)
+}
+
+func (l *Lexer) lastEqual(expected rune) bool {
+	return l.lastRune == expected
 }
 
 func (l *Lexer) lastEqualOrReset(expected rune) bool {
