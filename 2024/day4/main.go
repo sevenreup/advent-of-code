@@ -26,4 +26,5 @@ func readInput() [][]rune {
 func main() {
 	grid := readInput()
 	solvePartOne(grid)
+	solvePartTwo(grid)
 }
